@@ -60,9 +60,10 @@ import vtkVolumeRepresentationProxy from '@kitware/vtk.js/Proxy/Representations/
 import vtkLookupTableProxy from '@kitware/vtk.js/Proxy/Core/LookupTableProxy';
 import vtkPiecewiseFunctionProxy from '@kitware/vtk.js/Proxy/Core/PiecewiseFunctionProxy';
 import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
+import vtkLight from '@kitware/vtk.js/Rendering/Core/Light';
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
 import { getDiagonalLength } from '@kitware/vtk.js/Common/DataModel/BoundingBox';
-import { Vector3 } from '@kitware/vtk.js/types';
+/* import { Vector3 } from '@kitware/vtk.js/types'; */
 
 import { useProxyManager } from '@/src/composables/proxyManager';
 import ViewOverlayGrid from '@src/components/ViewOverlayGrid.vue';
@@ -295,23 +296,57 @@ export default defineComponent({
         const volume = rep.getVolumes()[0];
         const property = volume.getProperty();
 
-        const volumeBounds = volume.getBounds();
-        const center = [
-          (volumeBounds[0] + volumeBounds[1]) / 2,
-          (volumeBounds[2] + volumeBounds[3]) / 2,
-          (volumeBounds[4] + volumeBounds[5]) / 2,
-        ] as Vector3;
+        /* const volumeBounds = volume.getBounds(); */
+        /* const center = [ */
+        /*   (volumeBounds[0] + volumeBounds[1]) / 2, */
+        /*   (volumeBounds[2] + volumeBounds[3]) / 2, */
+        /*   (volumeBounds[4] + volumeBounds[5]) / 2, */
+        /* ] as Vector3; */
 
-        if (renderer.getLights().length === 0) {
+        if (renderer.getLights().length === 0 && !enabled) {
           renderer.createLight();
         }
         const light = renderer.getLights()[0];
         if (enabled) {
-          light.setFocalPoint(...center);
-          light.setColor(1, 1, 1);
-          light.setIntensity(1);
-          light.setConeAngle(90);
-          light.setPositional(true);
+          const keyLightIntensity = 0.4;
+          const keyLight = vtkLight.newInstance();
+          keyLight.setLightTypeToCameraLight();
+          keyLight.setPositional(false);
+          keyLight.setDirectionAngle(50, 10);
+          keyLight.setIntensity(keyLightIntensity);
+          // keyLight.setColor(1, 1, 0);
+          const fillLight = vtkLight.newInstance();
+          fillLight.setLightTypeToCameraLight();
+          fillLight.setPositional(false);
+          fillLight.setDirectionAngle(-75, -10);
+          fillLight.setIntensity(keyLightIntensity / 3.0);
+          // fillLight.setColor(1, 0, 0);
+          const backLight1 = vtkLight.newInstance();
+          backLight1.setLightTypeToCameraLight();
+          backLight1.setPositional(false);
+          backLight1.setDirectionAngle(0, 110);
+          // backLight1.setColor(0, 0, 1);
+          backLight1.setIntensity(keyLightIntensity / 3.0);
+          const backLight2 = vtkLight.newInstance();
+          backLight2.setLightTypeToCameraLight();
+          backLight2.setPositional(false);
+          backLight2.setDirectionAngle(0, -110);
+          backLight2.setIntensity(keyLightIntensity / 3.0);
+          // backLight2.setColor(0, 1, 0);
+          const headLight = vtkLight.newInstance();
+          headLight.setLightTypeToHeadLight();
+          headLight.setPositional(false);
+          headLight.setColor(1, 1, 1);
+          headLight.setIntensity(keyLightIntensity / 3.0);
+          renderer.addLight(keyLight);
+          renderer.addLight(fillLight);
+          renderer.addLight(backLight1);
+          renderer.addLight(backLight2);
+          /* light.setFocalPoint(...center); */
+          /* light.setColor(1, 1, 1); */
+          /* light.setIntensity(1); */
+          /* light.setConeAngle(90); */
+          /* light.setPositional(true); */
           renderer.setTwoSidedLighting(false);
           if (params.lightFollowsCamera) {
             light.setLightTypeToHeadLight();
